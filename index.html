@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RST 공손표지 분석기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f5f0; --bg2: #eeeae0; --surface: #fffef9;
+  --border: #d8d3c8; --border2: #c5bfb0;
+  --text: #1a1714; --text2: #5a554e; --text3: #8a847a;
+  --accent: #3d4f2e; --accent2: #5a7040; --accent-light: #dde8d0;
+  --nucleus: #2c3e50; --nucleus-bg: #e8ecf0;
+  --satellite-bg: #f0ece4;
+  --move: #2a3d6b; --move-bg: #e8edf5;
+  --h1: #4a6741; --h1-bg: #eaf2e8;
+  --h2: #5a6b2a; --h2-bg: #f0f2e0;
+  --h3: #6b4f2a; --h3-bg: #f5ede0;
+  --h4: #2a4f6b; --h4-bg: #e0edf5;
+  --h5: #6b2a50; --h5-bg: #f5e0ec;
+  --radius: 6px; --radius-lg: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.7; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; }
+header h1 { font-family: 'Noto Serif KR', serif; font-size: 20px; font-weight: 600; color: var(--accent); letter-spacing: -0.3px; margin-bottom: 2px; }
+.subtitle { font-size: 11px; color: var(--text3); }
+.theory-note { font-size: 11px; color: var(--text3); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+.api-banner { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.api-banner label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+.api-banner input { flex: 1; min-width: 200px; padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; }
+.api-banner input:focus { outline: none; border-color: var(--accent); }
+.api-note { font-size: 11px; color: var(--text3); width: 100%; }
+
+.legend { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.legend-title { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.legend-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.legend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
+.legend-item { padding: 7px 10px; border-radius: var(--radius); font-size: 11px; line-height: 1.6; }
+.legend-item strong { display: block; font-size: 12px; margin-bottom: 1px; }
+.li1 { background: var(--h1-bg); color: var(--h1); }
+.li2 { background: var(--h2-bg); color: var(--h2); }
+.li3 { background: var(--h3-bg); color: var(--h3); }
+.li4 { background: var(--h4-bg); color: var(--h4); }
+.li5 { background: var(--h5-bg); color: var(--h5); }
+
+.input-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; }
+.input-card > label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
+.lang-select { display: flex; gap: 8px; margin-bottom: 10px; }
+.lang-btn { padding: 4px 14px; font-size: 12px; border-radius: 20px; cursor: pointer; border: 1px solid var(--border2); background: var(--bg); color: var(--text2); font-family: 'Noto Sans KR', sans-serif; transition: all 0.15s; }
+.lang-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+textarea { width: 100%; padding: 12px; font-size: 14px; line-height: 1.8; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; resize: vertical; }
+textarea:focus { outline: none; border-color: var(--accent2); }
+.input-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+button { padding: 7px 16px; font-size: 13px; border-radius: var(--radius); cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-ghost:hover { background: var(--bg2); }
+.status { font-size: 12px; color: var(--text3); }
+
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
+.tab { padding: 8px 18px; font-size: 13px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text3); cursor: pointer; }
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+.stats-row { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.stat { flex: 1; min-width: 80px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+.stat-n { font-size: 24px; font-weight: 500; color: var(--accent); font-family: 'Noto Serif KR', serif; }
+.stat-l { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.edu-list { display: flex; flex-direction: column; gap: 10px; }
+.edu-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; }
+.edu-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.edu-num { font-size: 11px; font-weight: 500; background: var(--accent-light); color: var(--accent); padding: 2px 8px; border-radius: 3px; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 3px; border: 1px solid; display: inline-flex; align-items: center; gap: 3px; }
+.tag-nucleus { background: var(--nucleus-bg); color: var(--nucleus); border-color: #b0bcc8; }
+.tag-satellite { background: var(--satellite-bg); color: #5a4a2a; border-color: #c8bca8; }
+.tag-move { background: var(--move-bg); color: var(--move); border-color: #b0bcd8; }
+.tag-h1 { background: var(--h1-bg); color: var(--h1); border-color: #b8d4b5; }
+.tag-h2 { background: var(--h2-bg); color: var(--h2); border-color: #ccd4a0; }
+.tag-h3 { background: var(--h3-bg); color: var(--h3); border-color: #d4c0a0; }
+.tag-h4 { background: var(--h4-bg); color: var(--h4); border-color: #a0bcd4; }
+.tag-h5 { background: var(--h5-bg); color: var(--h5); border-color: #d4a0bc; }
+
+.edu-text { font-size: 14px; line-height: 1.8; color: var(--text); margin-bottom: 8px; }
+.edu-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.rel-edit { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); }
+.rel-edit span { font-size: 11px; color: var(--text3); }
+select { padding: 3px 8px; font-size: 11px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; cursor: pointer; }
+select:focus { outline: none; border-color: var(--accent); }
+
+.tree-area { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; min-height: 160px; }
+.tree-node { margin-left: 24px; margin-top: 4px; }
+.tree-root { margin-left: 0; }
+.tree-edu-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 3px 0; }
+.tree-rel { font-size: 11px; color: var(--accent2); margin-left: 24px; padding: 1px 0; font-style: italic; }
+
+.pol-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.pol-header-title { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 8px; }
+.pol-type-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.pol-list { display: flex; flex-direction: column; }
+.pol-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.pol-item:last-child { border-bottom: none; }
+.pol-edu-badge { font-size: 10px; background: var(--accent-light); color: var(--accent); padding: 2px 7px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+.pol-marker { font-weight: 500; color: #6b3a2a; margin-bottom: 4px; }
+.pol-function { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.pol-basis { font-size: 11px; color: var(--text3); margin-top: 3px; font-style: italic; border-left: 2px solid var(--border2); padding-left: 8px; }
+
+.empty { text-align: center; color: var(--text3); padding: 3rem 1rem; font-size: 13px; line-height: 2; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer { text-align: center; padding: 2rem; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); margin-top: 3rem; line-height: 2; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>RST 공손표지 분석기</h1>
+  <div class="subtitle">한·일 온라인 북리뷰 · 수사구조이론 기반 헤지 표현 분석</div>
+  <div class="theory-note">헤지 분류 체계: Hyland(1998) 기본 분류 → 박양순(2024) 한·일 비교 데이터 참조 재구성 · 김소랑(2025)</div>
+</header>
+
+<div class="container">
+
+  <div class="api-banner">
+    <label for="apiKey">Anthropic API 키</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
+    <span class="api-note">키는 이 페이지 내에서만 사용되며 어디에도 전송·저장되지 않습니다.</span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-title">헤지 표현 분류 체계</div>
+    <div class="legend-grid">
+      <div class="legend-item li1"><strong>H1 판단 유보형</strong>~인 것 같다, ~싶다 / みたいだ, ような気</div>
+      <div class="legend-item li2"><strong>H2 완화 부사형</strong>좀/조금, 약간, 그냥 / ちょっと, なんか</div>
+      <div class="legend-item li3"><strong>H3 불확실성 표지형</strong>아마, 어쩌면 / たぶん, かもしれない</div>
+      <div class="legend-item li4"><strong>H4 인용·객관화형</strong>~고 하다, ~라고들 / ~という, ~って感じ</div>
+      <div class="legend-item li5"><strong>H5 자격 낮추기형 *</strong>개인적으로는, 잘 모르지만 / 私的には<br><span style="font-size:10px;opacity:0.8">* 김소랑(2025) 추가</span></div>
+    </div>
+  </div>
+
+  <div class="input-card">
+    <label>분석할 북리뷰 텍스트</label>
+    <div class="lang-select">
+      <button class="lang-btn active" onclick="setLang('ko', this)">한국어</button>
+      <button class="lang-btn" onclick="setLang('ja', this)">日本語</button>
+    </div>
+    <textarea id="inputText" rows="6" placeholder="예) 처음엔 기대를 안 했는데, 읽다 보니 생각보다 꽤 괜찮더라고요. 문체가 좀 어렵긴 하지만, 전반적으로는 추천할 만한 것 같아요."></textarea>
+    <div class="input-actions">
+      <button class="btn-primary" id="analyzeBtn" onclick="analyze()">분석 시작</button>
+      <button class="btn-ghost" onclick="loadExample()">예시 텍스트</button>
+      <span class="status" id="statusMsg"></span>
+    </div>
+  </div>
+
+  <div id="resultArea" style="display:none;">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('edu', this)">EDU 분석</button>
+      <button class="tab" onclick="switchTab('tree', this)">RST 트리</button>
+      <button class="tab" onclick="switchTab('pol', this)">공손표지</button>
+    </div>
+    <div id="tab-edu" class="tab-content">
+      <div id="statsRow" class="stats-row"></div>
+      <div id="eduList" class="edu-list"></div>
+    </div>
+    <div id="tab-tree" class="tab-content" style="display:none;">
+      <div id="treeArea" class="tree-area"></div>
+    </div>
+    <div id="tab-pol" class="tab-content" style="display:none;">
+      <div id="polArea"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  RST 공손표지 분석기 · 한·일 북리뷰 담화 분석 도구<br>
+  헤지 분류: Hyland(1998) + 박양순(2024) 재구성 · Powered by Claude (Anthropic) · GitHub Pages
+</footer>
+
+<script>
+const RST_RELATIONS = ['Elaboration','Contrast','Concession','Background','Evaluation','Evidence','Cause','Condition','Sequence','Restatement'];
+const MOVE_LABELS = ['도입','줄거리 요약','평가','추천/비추천','근거 제시','맺음말'];
+
+const HEDGE_TYPES = {
+  'H1': {
+    name: '판단 유보형',
+    desc: 'Hyland(1998) Shield 변형. 화자의 판단을 단정하지 않고 추측·가능성으로 유보하는 표현.',
+    ko: '~인 것 같다, ~싶다, ~겠다, (~처럼) 보이다, ~느낌이다, ~듯하다, ~인가 싶다',
+    ja: 'みたいだ, ような気がする, そうだ, らしい, 感じがする, 思う',
+    cls: 'tag-h1'
+  },
+  'H2': {
+    name: '완화 부사형',
+    desc: 'Hyland(1998) Approximator 변형. 박양순(2024) 고빈도 부사형 헤지 반영. 명제 강도를 부사로 완화.',
+    ko: '좀/조금/약간, 그냥, 다소, 거의, 별로, 정도/가까이, 꽤, 웬만큼',
+    ja: 'ちょっと, なんか, くらい, けっこう, あまり, ほとんど, わりと',
+    cls: 'tag-h2'
+  },
+  'H3': {
+    name: '불확실성 표지형',
+    desc: 'Hyland(1998) Plausibility Shield 변형. 명제의 확실성에 대한 화자의 인식론적 유보를 명시.',
+    ko: '아마, 어쩌면, ~일지도 모른다, ~일 수 있다, ~지 않을까, 혹시, 어쩌면',
+    ja: 'たぶん, おそらく, かもしれない, かしら, もしかしたら, かな',
+    cls: 'tag-h3'
+  },
+  'H4': {
+    name: '인용·객관화형',
+    desc: 'Hyland(1998) Attribution Shield 변형. 발화 책임을 타자·일반적 담화로 분산하거나 인용 형식으로 객관화.',
+    ko: '~고 하다, ~라고들 하다, ~다고 해요, ~대요(인용), ~라고 할까, ~라고 할 수 있다',
+    ja: '~という, ~って感じ, ~とか, ~って, ~と思う, ~らしい(전문)',
+    cls: 'tag-h4'
+  },
+  'H5': {
+    name: '자격 낮추기형',
+    desc: '김소랑(2025) 추가 유형. 박양순(2024) 한국어 데이터에서 특징적으로 나타나는 자기 자격·권위 완화 표현. Hyland 원분류에 없음.',
+    ko: '개인적으로는, 제 기준엔, 잘 모르지만, 제가 틀릴 수도 있지만, 독자에 따라 다르겠지만',
+    ja: '私的には, よくわからないけど, 私の場合は, あくまでも個人的に',
+    cls: 'tag-h5'
+  }
+};
+
+let analysisData = null;
+let currentLang = 'ko';
+
+function setLang(lang, el) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('inputText').placeholder = lang === 'ko'
+    ? '예) 처음엔 기대를 안 했는데, 읽다 보니 생각보다 꽤 괜찮더라고요. 문체가 좀 어렵긴 하지만, 전반적으로는 추천할 만한 것 같아요.'
+    : '例) 最初はあまり期待していなかったんですが、読んでみたらけっこうよかったです。文体がちょっと難しい気がするけど、全体的にはおすすめかな。';
+}
+
+function loadExample() {
+  if (currentLang === 'ko') {
+    document.getElementById('inputText').value =
+      '소년이 온다와 작별하지 않는다는 책과는 다른 아픔과 삶에 대해 쓴 책으로 작가는 \'나에게는 이 소설을 껴안을 힘이 있다\'라고 말했는데 그 생생한 고통이 느껴지는 그리고 삶이 무언인지 잘모르지만 조금은 알게 해준 책이다 아프다.....';
+  } else {
+    document.getElementById('inputText').value =
+      '最初はあまり期待していなかったんですが、読んでみたら思ったよりけっこうよかったです。文体がちょっと難しいかもしれないけど、全体的にはおすすめな感じがします。個人的には後半がちょっと惜しかった気がするんですけど。';
+  }
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  el.classList.add('active');
+  document.getElementById('tab-' + name).style.display = 'block';
+}
+
+function buildPrompt(text, lang) {
+  const langLabel = lang === 'ko' ? '한국어' : '일본어';
+  const hedgeGuide = Object.entries(HEDGE_TYPES).map(([k, v]) => {
+    const examples = lang === 'ko' ? v.ko : v.ja;
+    return `  ${k} (${v.name}): ${v.desc}\n    예시: ${examples}`;
+  }).join('\n');
+
+  return `다음 ${langLabel} 온라인 북리뷰 텍스트를 RST(수사구조이론) 기반으로 분석해줘.
+
+텍스트: "${text}"
+
+【헤지 표현 분류 기준 — Hyland(1998) + 박양순(2024) 재구성, 김소랑(2025)】
+${hedgeGuide}
+
+【분류 시 필수 주의사항】
+1. 말줄임표 결합 감정 단어("아프다.....", "슬프다...") → 불확실성 표지 아님. 헤지 아님으로 처리.
+2. 단순 감정 표현, 느낌 묘사 → 헤지 아님. 명제 강도를 실제로 완화하는 경우만 헤지.
+3. H5(자격 낮추기형)는 Hyland 원분류에 없는 김소랑(2025) 추가 유형임을 basis에 명시.
+4. 각 헤지 표지의 basis 필드에: 어떤 Hyland 원분류에 해당하는지, 또는 왜 박양순/김소랑 추가인지 간략히 명시.
+
+다음 JSON 형식으로만 응답해. 추가 설명 없이 JSON만:
+
+{
+  "edus": [
+    {
+      "id": 1,
+      "text": "EDU 텍스트",
+      "role": "nucleus 또는 satellite",
+      "move": "${MOVE_LABELS.join(' / ')} 중 하나",
+      "hedge_markers": [{"text": "표지 텍스트", "type": "H1~H5 중 하나"}]
+    }
+  ],
+  "relations": [
+    {
+      "nucleus": 1,
+      "satellite": 2,
+      "relation": "${RST_RELATIONS.join(' / ')} 중 하나",
+      "description": "한 줄 설명"
+    }
+  ],
+  "politeness_summary": [
+    {
+      "marker": "표지 텍스트",
+      "type": "H1~H5 중 하나",
+      "type_name": "유형 한국어 이름",
+      "edu_id": 1,
+      "function": "이 북리뷰 맥락에서 수행하는 담화 기능",
+      "basis": "분류 근거 (예: Hyland Plausibility Shield 변형 / 김소랑 2025 H5 추가 유형)"
+    }
+  ]
+}`;
+}
+
+async function analyze() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const text = document.getElementById('inputText').value.trim();
+  if (!apiKey) { setStatus('API 키를 입력해주세요.'); return; }
+  if (!text) { setStatus('텍스트를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  setStatus('<span class="spinner"></span>분석 중...');
+  document.getElementById('resultArea').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: buildPrompt(text, currentLang) }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = data.content.map(c => c.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    analysisData = JSON.parse(clean);
+
+    renderEDU();
+    renderTree();
+    renderPoliteness();
+    document.getElementById('resultArea').style.display = 'block';
+    setStatus('분석 완료 ✓');
+  } catch (e) {
+    setStatus('오류: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setStatus(msg) {
+  document.getElementById('statusMsg').innerHTML = msg;
+}
+
+function renderEDU() {
+  const { edus, relations } = analysisData;
+  const totalHedge = edus.reduce((s, e) => s + (e.hedge_markers?.length || 0), 0);
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="stat-n">${edus.length}</div><div class="stat-l">EDU 수</div></div>
+    <div class="stat"><div class="stat-n">${relations.length}</div><div class="stat-l">수사 관계</div></div>
+    <div class="stat"><div class="stat-n">${edus.filter(e=>e.role==='nucleus').length}</div><div class="stat-l">Nucleus</div></div>
+    <div class="stat"><div class="stat-n">${totalHedge}</div><div class="stat-l">헤지 표지</div></div>
+  `;
+
+  document.getElementById('eduList').innerHTML = edus.map(edu => {
+    const myRels = relations.filter(r => r.nucleus===edu.id || r.satellite===edu.id);
+    const markers = edu.hedge_markers || [];
+    return `
+      <div class="edu-card">
+        <div class="edu-header">
+          <span class="edu-num">EDU ${edu.id}</span>
+          <span class="tag ${edu.role==='nucleus'?'tag-nucleus':'tag-satellite'}">${edu.role}</span>
+          <span class="tag tag-move">${edu.move}</span>
+        </div>
+        <div class="edu-text">${edu.text}</div>
+        ${markers.length ? `<div class="edu-meta">
+          ${markers.map(m=>`<span class="tag ${HEDGE_TYPES[m.type]?.cls||''}">${m.text} <em style="opacity:0.7;font-style:normal">${m.type}</em></span>`).join('')}
+        </div>` : ''}
+        ${myRels.length ? `
+        <div class="rel-edit">
+          <span>관계 수정:</span>
+          ${myRels.map(r=>`
+            <select onchange="updateRelation(${r.nucleus},${r.satellite},this.value)">
+              ${RST_RELATIONS.map(rel=>`<option${rel===r.relation?' selected':''}>${rel}</option>`).join('')}
+            </select>
+            <span style="font-size:11px;color:var(--text3)">N${r.nucleus}→S${r.satellite}</span>
+          `).join('')}
+        </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function updateRelation(nuc, sat, newRel) {
+  if (!analysisData) return;
+  const rel = analysisData.relations.find(r => r.nucleus===nuc && r.satellite===sat);
+  if (rel) { rel.relation = newRel; renderTree(); }
+}
+
+function renderTree() {
+  const { edus, relations } = analysisData;
+  const relMap = {};
+  relations.forEach(r => {
+    if (!relMap[r.nucleus]) relMap[r.nucleus] = [];
+    relMap[r.nucleus].push(r);
+  });
+
+  function node(id, depth) {
+    const edu = edus.find(e=>e.id===id);
+    if (!edu) return '';
+    const preview = edu.text.length > 35 ? edu.text.slice(0,35)+'…' : edu.text;
+    let html = `<div class="${depth===0?'tree-root':'tree-node'}">
+      <div class="tree-edu-label">
+        <span class="tag ${edu.role==='nucleus'?'tag-nucleus':'tag-satellite'}">EDU ${edu.id}</span>
+        <span style="font-size:12px;color:var(--text2)">${preview}</span>
+      </div>`;
+    if (relMap[id]) {
+      relMap[id].forEach(r => {
+        html += `<div class="tree-rel">↳ ${r.relation}</div>`;
+        html += node(r.satellite, depth+1);
+      });
+    }
+    html += '</div>';
+    return html;
+  }
+
+  const satIds = new Set(relations.map(r=>r.satellite));
+  const roots = edus.filter(e=>!satIds.has(e.id));
+  document.getElementById('treeArea').innerHTML =
+    roots.map(r=>node(r.id,0)).join('') ||
+    '<div class="empty">트리를 구성할 수 없습니다.</div>';
+}
+
+function renderPoliteness() {
+  const { politeness_summary } = analysisData;
+  if (!politeness_summary?.length) {
+    document.getElementById('polArea').innerHTML = '<div class="empty">감지된 헤지 표지가 없습니다.</div>';
+    return;
+  }
+
+  const byType = {};
+  politeness_summary.forEach(p => { byType[p.type] = (byType[p.type]||0) + 1; });
+
+  let html = `<div class="pol-header">
+    <div class="pol-header-title">헤지 유형별 분포 — Hyland(1998) + 박양순(2024) 재구성 · 김소랑(2025)</div>
+    <div class="pol-type-badges">
+      ${Object.entries(HEDGE_TYPES).map(([k,v]) =>
+        byType[k] ? `<span class="tag ${v.cls}">${k} ${v.name} <strong>${byType[k]}</strong></span>` : ''
+      ).join('')}
+    </div>
+  </div>`;
+
+  html += '<div class="pol-list">';
+  politeness_summary.forEach(p => {
+    const t = HEDGE_TYPES[p.type] || {};
+    html += `<div class="pol-item">
+      <span class="pol-edu-badge">EDU ${p.edu_id}</span>
+      <div style="flex:1">
+        <div class="pol-marker">"${p.marker}"</div>
+        <div style="margin-bottom:4px">
+          <span class="tag ${t.cls||''}" style="font-size:10px">${p.type} ${p.type_name||t.name||''}</span>
+        </div>
+        <div class="pol-function">${p.function}</div>
+        <div class="pol-basis">${p.basis||'—'}</div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  document.getElementById('polArea').innerHTML = html;
+}
+</script>
+</body>
+</html>
